@@ -15,8 +15,9 @@ class ChatSession(Base):
     )
 
     workspace_id: Mapped[int] = mapped_column(
-        ForeignKey("workspaces.id"),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     title: Mapped[str | None] = mapped_column(
@@ -51,8 +52,9 @@ class ChatMessage(Base):
     )
 
     session_id: Mapped[int] = mapped_column(
-        ForeignKey("chat_sessions.id"),
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     role: Mapped[str] = mapped_column(

@@ -15,8 +15,9 @@ class Document(Base):
     )
 
     workspace_id: Mapped[int] = mapped_column(
-        ForeignKey("workspaces.id"),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     filename: Mapped[str] = mapped_column(
