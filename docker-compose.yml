@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:16
+    container_name: cortex-postgres
+    environment:
+      POSTGRES_USER: cortex
+      POSTGRES_PASSWORD: cortex
+      POSTGRES_DB: cortex
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: docker.io/library/redis:7
+    container_name: cortex-redis
+    ports:
+      - "6379:6379"
+
+  qdrant:
+    image: docker.io/qdrant/qdrant:latest
+    container_name: cortex-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  postgres_data:
+  qdrant_data:
