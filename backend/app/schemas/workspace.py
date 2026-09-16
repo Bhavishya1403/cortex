@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,3 +15,15 @@ class WorkspaceOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class WorkspaceMemberCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    role: Literal["admin", "member"] = "member"
+
+
+class WorkspaceMemberOut(BaseModel):
+    user_id: int
+    email: str
+    full_name: str | None
+    role: Literal["owner", "admin", "member"]
