@@ -12,3 +12,6 @@ email-validator
 python-multipart
 python-dotenv
 qdrant-client
+
+celery
+redis

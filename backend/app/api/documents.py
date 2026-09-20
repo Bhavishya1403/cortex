@@ -11,6 +11,7 @@ from app.models.document import Document
 from app.models.user import User
 from app.models.workspace import WorkspaceMember
 from app.schemas.document import DocumentOut
+from app.worker.tasks import process_document_task
 
 
 router = APIRouter(
@@ -91,6 +92,7 @@ def upload_document(
     db.add(document)
     db.commit()
     db.refresh(document)
+    process_document_task.delay(document.id)
 
     return document
 
