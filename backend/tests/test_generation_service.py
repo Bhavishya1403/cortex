@@ -64,3 +64,28 @@ def test_generate_answer_rejects_empty_model_response(monkeypatch):
             query="What is Cortex?",
             context="Cortex is a RAG application.",
         )
+
+
+def test_generate_answer_includes_critic_feedback(monkeypatch):
+    captured = {}
+
+    def fake_generate_content(*, model, contents):
+        captured["contents"] = contents
+        return SimpleNamespace(text="Corrected answer.")
+
+    monkeypatch.setattr(
+        generation_service.client.models,
+        "generate_content",
+        fake_generate_content,
+    )
+
+    answer = generation_service.generate_answer(
+        query="What is Cortex?",
+        context="[Document 1, chunk 0]\nCortex is a RAG application.",
+        critic_feedback="The answer must stay within the provided context.",
+    )
+
+    assert answer == "Corrected answer."
+    assert "PREVIOUS ANSWER FEEDBACK:" in captured["contents"]
+    assert "The answer must stay within the provided context." in captured["contents"]
+    assert "Revise the answer to address this feedback." in captured["contents"]
