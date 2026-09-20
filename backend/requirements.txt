@@ -15,3 +15,5 @@ qdrant-client
 
 celery
 redis
+
+langgraph
