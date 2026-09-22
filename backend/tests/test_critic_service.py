@@ -85,3 +85,70 @@ def test_verify_answer_rejects_empty_model_response(monkeypatch):
             context="Cortex is a RAG application.",
             answer="Cortex is a RAG application.",
         )
+def test_verify_answer_reraises_persistent_server_error(monkeypatch):
+    calls = {"count": 0}
+
+    def fake_generate_content(*, model, contents, config):
+        calls["count"] += 1
+        raise critic_service.errors.ServerError(
+            code=503,
+            response_json={
+                "error": {
+                    "code": 503,
+                    "message": "provider remains unavailable",
+                    "status": "UNAVAILABLE",
+                }
+            },
+        )
+
+    monkeypatch.setattr(
+        critic_service.client.models,
+        "generate_content",
+        fake_generate_content,
+    )
+
+    with pytest.raises(critic_service.errors.ServerError):
+        critic_service.verify_answer(
+            query="What is Cortex?",
+            context="[Document 1, chunk 0]\nCortex is a RAG application.",
+            answer="Cortex is a RAG application.",
+        )
+
+    assert calls["count"] == critic_service.CRITIC_MAX_ATTEMPTS
+
+def test_verify_answer_retries_transient_server_error(monkeypatch):
+    calls = {"count": 0}
+
+    def fake_generate_content(*, model, contents, config):
+        calls["count"] += 1
+
+        if calls["count"] == 1:
+            raise critic_service.errors.ServerError(
+                code=503,
+                response_json={
+                    "error": {
+                        "code": 503,
+                        "message": "temporary provider failure",
+                        "status": "UNAVAILABLE",
+                    }
+                },
+            )
+
+        return SimpleNamespace(
+            text='{"grounded": true, "feedback": "The answer is supported by the context."}'
+        )
+
+    monkeypatch.setattr(
+        critic_service.client.models,
+        "generate_content",
+        fake_generate_content,
+    )
+
+    result = critic_service.verify_answer(
+        query="What is Cortex?",
+        context="[Document 1, chunk 0]\nCortex is a RAG application.",
+        answer="Cortex is a RAG application.",
+    )
+
+    assert result.grounded is True
+    assert calls["count"] == 2

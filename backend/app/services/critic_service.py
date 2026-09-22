@@ -1,11 +1,13 @@
 from pydantic import BaseModel, Field
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 from app.core.config import settings
 
 
 CRITIC_MODEL = "gemini-3.6-flash"
+
+CRITIC_MAX_ATTEMPTS = 2
 
 
 client = genai.Client(
@@ -57,14 +59,22 @@ def verify_answer(
         f"PROPOSED ANSWER:\n{answer}"
     )
 
-    response = client.models.generate_content(
-        model=CRITIC_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=CriticResult,
-        ),
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=CriticResult,
     )
+
+    for attempt in range(CRITIC_MAX_ATTEMPTS):
+        try:
+            response = client.models.generate_content(
+                model=CRITIC_MODEL,
+                contents=prompt,
+                config=config,
+            )
+            break
+        except errors.ServerError:
+            if attempt == CRITIC_MAX_ATTEMPTS - 1:
+                raise
 
     result = (response.text or "").strip()
 
